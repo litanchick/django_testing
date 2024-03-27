@@ -32,7 +32,7 @@ def test_redirects(client, name, args):
         ('users:login', None),
         ('users:logout', None),
         ('users:signup', None),
-     )
+    )
 )
 def test_pages_availability_for_anonymous_user(client, name, args):
     """Тестируем все адреса, доступные для анонимных пользователей."""
