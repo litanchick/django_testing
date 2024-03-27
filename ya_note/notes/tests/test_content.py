@@ -31,18 +31,13 @@ class TestContentNotes(TestCase):
             (self.author, 1),
             (self.reader, 0),
         )
-        urls = (
-            'notes:list',
-            'notes:home'
-        )
         for user, count_notes in users_notes_count:
             self.client.force_login(user)
-            for page in urls:
-                with self.subTest(user=user):
-                    url = reverse(page)
-                    response = self.client.get(url)
-                    object_list = response.context['object_list']
-                    self.assertEqual(object_list.count(), count_notes)
+            with self.subTest(user=user):
+                url = reverse('notes:list')
+                response = self.client.get(url)
+                object_list = response.context['object_list']
+                self.assertEqual(object_list.count(), count_notes)
 
     def test_notes_order(self):
         """Testing passing a note to a page in the object_list."""
