@@ -46,13 +46,17 @@ class TestContentNotes(TestCase):
 
     def test_notes_order(self):
         """Testing passing a note to a page in the object_list."""
-        detail_url = reverse('notes:detail', args=(self.note.slug,))
-        response = self.client.get(detail_url)
-        notes = response.context['object_list']
-        all_notes = notes.notes_set.all()
-        all_id_notes = [notes.created for notes in all_notes]
-        sorted_timestamps = sorted(all_id_notes)
-        self.assertEqual(all_id_notes, sorted_timestamps)
+        users_statuses = (
+            (self.author, True),
+            (self.reader, False),
+        )
+        for user, flag_is_list in users_statuses:
+            self.client.force_login(user)
+            with self.subTest(user=user):
+                url = reverse('notes:list')
+                response = self.client.get(url)
+                object_list = response.context['object_list']
+                self.assertEqual(self.note in object_list, flag_is_list)
 
     def test_is_form_in_pages(self):
         """Forms are transferred to the note creation and editing pages."""
