@@ -46,7 +46,7 @@ class TestContentNotes(TestCase):
 
     def test_notes_order(self):
         """Testing passing a note to a page in the object_list."""
-        detail_url = reverse('notes:detail', args=(self.notes.slug,))
+        detail_url = reverse('notes:detail', args=(self.note.slug,))
         response = self.client.get(detail_url)
         self.assertIn('object_list', response.context)
         notes = response.context['object_list']
