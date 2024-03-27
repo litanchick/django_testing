@@ -48,7 +48,6 @@ class TestContentNotes(TestCase):
         """Testing passing a note to a page in the object_list."""
         detail_url = reverse('notes:detail', args=(self.note.slug,))
         response = self.client.get(detail_url)
-        self.assertIn('object_list', response.context)
         notes = response.context['object_list']
         all_notes = notes.notes_set.all()
         all_id_notes = [notes.created for notes in all_notes]
