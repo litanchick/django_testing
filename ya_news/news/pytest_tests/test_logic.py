@@ -2,17 +2,17 @@
 from http import HTTPStatus
 from random import choice
 
+import pytest
 from django.urls import reverse
-from news.forms import BAD_WORDS, WARNING
-from news.models import Comment
 from pytest_django.asserts import assertFormError, assertRedirects
 
-from .conftest import pytestmark
-
+from news.forms import BAD_WORDS, WARNING
+from news.models import Comment
 
 FORM_DATA = {
     'text': 'Новый текст',
 }
+pytestmark = pytest.mark.django_db
 
 
 def test_user_cant_use_bad_words(author_client, page_detail):

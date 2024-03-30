@@ -2,7 +2,9 @@
 import pytest
 from django.conf import settings
 from news.forms import CommentForm
-from .conftest import pytestmark
+
+
+pytestmark = pytest.mark.django_db
 
 
 def test_news_count(client, home_page, count_news_pagination):
@@ -42,5 +44,5 @@ def test_pages_contains_form(
     """Проверяем доступность формы для анонимного пользователя и не анонима."""
     response = parametrized_client.get(page_detail)
     assert ('form' in response.context) is flag_availability_form
-    if flag_availability_form == True:
+    if flag_availability_form is True:
         assert isinstance(response.context['form'], CommentForm)

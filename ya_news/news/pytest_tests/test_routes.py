@@ -2,14 +2,13 @@
 from http import HTTPStatus
 
 import pytest
-from django.urls import reverse
 from pytest_django.asserts import assertRedirects
 from pytest_lazyfixture import lazy_fixture as lf
 
-from .conftest import pytestmark
 
 STAT_OK = HTTPStatus.OK
 STAT_NFOUND = HTTPStatus.NOT_FOUND
+pytestmark = pytest.mark.django_db
 
 
 @pytest.mark.parametrize(
@@ -50,6 +49,7 @@ def test_pages_availability_for_different_users(
     expected_status
 ):
     """Тестируем все адреса, доступные для анонимных пользователей и
-    доступность редактирования, удаления комментария автору/не автору."""
+    доступность редактирования, удаления комментария автору/не автору.
+    """
     response = parametrize_client.get(name_page)
     assert response.status_code == expected_status
