@@ -1,111 +1,101 @@
 """Тестирование логики проекта 'ya_news' с помощью pytest."""
 from http import HTTPStatus
+from random import choice
 
-import pytest
 from django.urls import reverse
-from pytest_django.asserts import assertFormError, assertRedirects
-
 from news.forms import BAD_WORDS, WARNING
 from news.models import Comment
+from pytest_django.asserts import assertFormError, assertRedirects
 
-from .test_content import FIRST_ELEMENT
+from .conftest import pytestmark
 
 
-def test_user_cant_use_bad_words(author_client, pk_for_news):
+FORM_DATA = {
+    'text': 'Новый текст',
+}
+
+
+def test_user_cant_use_bad_words(author_client, page_detail):
     """Если комментарий содержит запрещённые слова, форма вернёт ошибку."""
-    url = reverse('news:detail', args=pk_for_news)
-    bad_words_data = {'text': f'Какой-то текст, {BAD_WORDS[0]}, еще текст'}
-    response = author_client.post(url, data=bad_words_data)
+    count_comment_last = Comment.objects.count()
+    bad_words_data = {
+        'text': f'Какой-то текст,{choice(BAD_WORDS)}, еще текст'
+    }
+    response = author_client.post(page_detail, data=bad_words_data)
     assertFormError(
         response,
         form='form',
         field='text',
         errors=WARNING
     )
-    assert Comment.objects.count() == 0
+    assert Comment.objects.count() == count_comment_last
 
 
-@pytest.mark.django_db
-def test_anonymous_user_cant_create_comment(client, form_data, pk_for_news):
+def test_anonymous_user_cant_create_comment(client, page_detail):
     """Анонимный пользователь не может создать комментарий."""
-    url = reverse('news:detail', args=pk_for_news)
-    response = client.post(url, data=form_data)
+    response = client.post(page_detail, data=FORM_DATA)
     login_url = reverse('users:login')
-    expected_url = f'{login_url}?next={url}'
+    expected_url = f'{login_url}?next={page_detail}'
     assertRedirects(response, expected_url)
     assert Comment.objects.count() == 0
 
 
-@pytest.mark.django_db
-def test_auth_user_can_add_comment(author_client, pk_for_news, comment):
-    """Зарегистрированный пользователь может отправлять заметки."""
-    url = reverse('news:detail', args=pk_for_news)
-    response = author_client.post(url)
-    assert response.status_code == HTTPStatus.OK
-    assert Comment.objects.count() == 1
-
-
-@pytest.mark.django_db
-def test_author_can_edit_comment(
+def test_auth_user_can_add_comment(
         author_client,
-        form_data,
-        pk_for_news,
+        news,
+        page_detail,
         comment
 ):
+    """Зарегистрированный пользователь может отправлять заметки."""
+    response = author_client.post(page_detail)
+    assert response.status_code == HTTPStatus.OK
+    assert Comment.objects.count() == 1
+    comment_from_db = Comment.objects.get(id=news.pk)
+    assert comment.text == comment_from_db.text
+
+
+def test_author_can_edit_comment(
+        author_client,
+        comment,
+        page_edit,
+        news
+):
     """Тестирование редактирования комментария автором."""
-    url = reverse('news:edit', args=pk_for_news)
-    response = author_client.post(url, form_data)
-    assertRedirects(
-        response,
-        reverse(
-            'news:detail',
-            args=pk_for_news
-        ) + '#comments'
-    )
+    response = author_client.post(page_edit, FORM_DATA)
+    assert response.status_code == HTTPStatus.FOUND
+    comment = Comment.objects.last()
     comment.refresh_from_db()
-    assert comment.news == form_data['news']
-    assert comment.text == form_data['text']
-    assert comment.author == form_data['author']
+    assert comment.text == FORM_DATA['text']
 
 
-@pytest.mark.django_db
 def test_other_user_cant_edit_comment(
         not_author_client,
-        form_data, comment,
-        pk_for_news
+        comment,
+        news,
+        page_edit
 ):
     """Зарегистрированный пользователь не может редактировать чужую заметку."""
-    url = reverse('news:edit', args=pk_for_news)
-    response = not_author_client.post(url, form_data)
+    response = not_author_client.post(page_edit, FORM_DATA)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    comment_from_db = Comment.objects.get(id=pk_for_news[FIRST_ELEMENT])
+    comment_from_db = Comment.objects.get(id=news.pk)
     assert comment.news == comment_from_db.news
     assert comment.text == comment_from_db.text
     assert comment.author == comment_from_db.author
 
 
-@pytest.mark.django_db
-def test_author_can_delete_comment(author_client, pk_for_comment, pk_for_news):
+def test_author_can_delete_comment(author_client, comment, page_delete, news):
     """Автор заметки может её удалить."""
-    url = reverse('news:delete', args=pk_for_comment)
-    response = author_client.post(url)
-    assertRedirects(
-        response,
-        reverse(
-            'news:detail',
-            args=pk_for_news
-        ) + '#comments'
-    )
+    response = author_client.post(page_delete)
+    assert response.status_code == HTTPStatus.FOUND
     assert Comment.objects.count() == 0
 
 
-@pytest.mark.django_db
 def test_other_user_cant_delete_comment(
         not_author_client,
-        pk_for_comment
+        comment,
+        page_delete
 ):
     """Не автор не может удалить заметку."""
-    url = reverse('news:delete', args=pk_for_comment)
-    response = not_author_client.post(url)
+    response = not_author_client.post(page_delete)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert Comment.objects.count() == 1

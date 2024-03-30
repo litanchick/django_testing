@@ -4,21 +4,16 @@
 - два клиента, авторизованных для обычного пользователя и автора,
 - объект комментария и формы.
 """
-import pytest
+from datetime import datetime, timedelta
 
+import pytest
+from django.conf import settings
 from django.test.client import Client
-from yanews.settings import NEWS_COUNT_ON_HOME_PAGE
+from django.urls import reverse
 from django.utils import timezone
 from news.models import Comment, News
 
-from datetime import datetime, timedelta
-
-
-@pytest.fixture
-def limit_news_on_page():
-    """Константа для количества новостей на странице."""
-    limit_news_on_page: int = 10
-    return limit_news_on_page
+pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
@@ -60,12 +55,6 @@ def news():
 
 
 @pytest.fixture
-def pk_for_news(news):
-    """Создаём прямое обращение к id новости для url."""
-    return news.pk,
-
-
-@pytest.fixture
 def count_news_pagination():
     """Создаём количество новостей на 1 больше ограничения на странице."""
     data = datetime.today()
@@ -74,7 +63,7 @@ def count_news_pagination():
             title=f'Заголовок {index}',
             text='Текст.',
             date=data - timedelta(days=index))
-        for index in range(NEWS_COUNT_ON_HOME_PAGE + 1)
+        for index in range(settings.NEWS_COUNT_ON_HOME_PAGE + 1)
     ]
     News.objects.bulk_create(all_news)
 
@@ -91,22 +80,6 @@ def comment(author, news):
 
 
 @pytest.fixture
-def form_data(news, author):
-    """Данные отправки POST запроса в форму для тестов."""
-    return {
-        'news': news,
-        'author': author,
-        'text': 'Новый текст',
-    }
-
-
-@pytest.fixture
-def pk_for_comment(comment):
-    """Создаём прямое обращение к id комментария для url."""
-    return comment.pk,
-
-
-@pytest.fixture
 def sort_list_comment(news, author):
     """Создаём 10 комментариев, чтобы проверить сортировку."""
     now = timezone.now()
@@ -118,3 +91,52 @@ def sort_list_comment(news, author):
         )
         comment.created = now + timedelta(days=index)
         comment.save()
+
+
+@pytest.fixture
+def home_page():
+    """Просчитываем путь до главной страницы."""
+    url_home_page = reverse('news:home')
+    return url_home_page
+
+
+@pytest.fixture
+def page_detail(news):
+    """Просчитываем путь до страницы с новостью."""
+    url_page_detail = reverse('news:detail', args=(news.pk,))
+    return url_page_detail
+
+
+@pytest.fixture
+def page_delete(comment):
+    """Просчитываем путь до страницы удаления комментария."""
+    url_page_delete = reverse('news:delete', args=(comment.pk,))
+    return url_page_delete
+
+
+@pytest.fixture
+def page_edit(comment):
+    """Просчитываем путь до страницы редактирования комментария."""
+    url_page_edit = reverse('news:edit', args=(comment.pk,))
+    return url_page_edit
+
+
+@pytest.fixture
+def page_login():
+    """Просчитываем путь до страницы входа в аккаунт."""
+    url_page_login = reverse('users:login')
+    return url_page_login
+
+
+@pytest.fixture
+def page_logout():
+    """Просчитываем путь до страницы выхода из аккаунта."""
+    url_page_logout = reverse('users:logout')
+    return url_page_logout
+
+
+@pytest.fixture
+def page_signup():
+    """Просчитываем путь до страницы регистрации."""
+    url_page_signup = reverse('users:signup')
+    return url_page_signup
