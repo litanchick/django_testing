@@ -11,9 +11,14 @@ from django.conf import settings
 from django.test.client import Client
 from django.urls import reverse
 from django.utils import timezone
+
 from news.models import Comment, News
 
-pytestmark = pytest.mark.django_db
+
+@pytest.fixture(autouse=True)
+def db_access_for_all_tests(db):
+    """Открываем доступ к БД для всех тестов."""
+    pass
 
 
 @pytest.fixture

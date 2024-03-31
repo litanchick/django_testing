@@ -44,5 +44,5 @@ def test_pages_contains_form(
     """Проверяем доступность формы для анонимного пользователя и не анонима."""
     response = parametrized_client.get(page_detail)
     assert ('form' in response.context) is flag_availability_form
-    if flag_availability_form is True:
+    if flag_availability_form:
         assert isinstance(response.context['form'], CommentForm)

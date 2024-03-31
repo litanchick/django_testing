@@ -3,7 +3,7 @@ from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
 
-from .test_content import SetupData
+from .setup_test_data import SetupData
 
 User = get_user_model()
 

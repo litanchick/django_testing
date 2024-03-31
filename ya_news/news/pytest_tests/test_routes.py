@@ -48,8 +48,14 @@ def test_pages_availability_for_different_users(
     parametrize_client,
     expected_status
 ):
-    """Тестируем все адреса, доступные для анонимных пользователей и
-    доступность редактирования, удаления комментария автору/не автору.
+    """Тестируем все адреса на доступность для разных пользователей.
+
+    Доступные для анонимных пользователей - 'client',
+    авторов заметок - 'author_client'
+    и пользователей - читателей, т.е. не авторов 'not_author_client'.
+
+    В параметрах функции передаём reverse страницы, пользователя и статус,
+    который ожидаем при запросе страницы.
     """
     response = parametrize_client.get(name_page)
     assert response.status_code == expected_status

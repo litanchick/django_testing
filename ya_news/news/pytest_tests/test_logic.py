@@ -33,11 +33,12 @@ def test_user_cant_use_bad_words(author_client, page_detail):
 
 def test_anonymous_user_cant_create_comment(client, page_detail):
     """Анонимный пользователь не может создать комментарий."""
+    count_comment_last = Comment.objects.count()
     response = client.post(page_detail, data=FORM_DATA)
     login_url = reverse('users:login')
     expected_url = f'{login_url}?next={page_detail}'
     assertRedirects(response, expected_url)
-    assert Comment.objects.count() == 0
+    assert Comment.objects.count() == count_comment_last
 
 
 def test_auth_user_can_add_comment(
@@ -47,25 +48,31 @@ def test_auth_user_can_add_comment(
         comment
 ):
     """Зарегистрированный пользователь может отправлять заметки."""
+    count_comment_last = Comment.objects.count()
     response = author_client.post(page_detail)
     assert response.status_code == HTTPStatus.OK
-    assert Comment.objects.count() == 1
-    comment_from_db = Comment.objects.get(id=news.pk)
+    assert Comment.objects.count() == count_comment_last
+    comment_from_db = Comment.objects.last()
     assert comment.text == comment_from_db.text
+    assert comment.news == comment_from_db.news
+    assert comment.author == comment_from_db.author
 
 
 def test_author_can_edit_comment(
         author_client,
         comment,
         page_edit,
-        news
+        news,
+        author
 ):
     """Тестирование редактирования комментария автором."""
     response = author_client.post(page_edit, FORM_DATA)
     assert response.status_code == HTTPStatus.FOUND
-    comment = Comment.objects.last()
+    comment = Comment.objects.get(id=comment.pk)
     comment.refresh_from_db()
     assert comment.text == FORM_DATA['text']
+    assert comment.news == news
+    assert comment.author == author
 
 
 def test_other_user_cant_edit_comment(
@@ -85,9 +92,10 @@ def test_other_user_cant_edit_comment(
 
 def test_author_can_delete_comment(author_client, comment, page_delete, news):
     """Автор заметки может её удалить."""
+    count_comment_last = Comment.objects.count()
     response = author_client.post(page_delete)
     assert response.status_code == HTTPStatus.FOUND
-    assert Comment.objects.count() == 0
+    assert Comment.objects.count() == count_comment_last - 1
 
 
 def test_other_user_cant_delete_comment(
@@ -96,6 +104,7 @@ def test_other_user_cant_delete_comment(
         page_delete
 ):
     """Не автор не может удалить заметку."""
+    count_comment_last = Comment.objects.count()
     response = not_author_client.post(page_delete)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert Comment.objects.count() == 1
+    assert Comment.objects.count() == count_comment_last
